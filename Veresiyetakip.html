@@ -1,0 +1,983 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Veresiye Takip Defteri</title>
+
+<style>
+body{font-family:Arial, sans-serif;background:#f0f2f5;padding:20px;margin:0}
+.container{max-width:1600px;margin:auto;background:#fff;padding:20px;border-radius:10px;box-shadow:0 2px 10px rgba(0,0,0,0.1)}
+h1{text-align:center;color:#333;margin-bottom:20px}
+
+input,select,textarea,button{
+  width:100%;padding:10px;margin:8px 0;font-size:14px;
+  border:1px solid #ddd;border-radius:4px;box-sizing:border-box
+}
+button{background:#0d6efd;color:#fff;border:none;cursor:pointer;font-weight:bold;transition:background 0.3s}
+button:hover{background:#084298}
+button.alt{background:#198754}
+button.alt:hover{background:#146c43}
+button.sil{background:#dc3545;margin-top:5px}
+button.sil:hover{background:#b02a37}
+button.duzenle{background:#ffc107;color:#000}
+button.duzenle:hover{background:#e0a800}
+
+table{width:100%;border-collapse:collapse;margin-top:20px}
+th,td{border:1px solid #ddd;padding:10px;text-align:center;font-size:14px}
+th{background:#f8f9fa;color:#333;font-weight:bold;position:relative;cursor:pointer;user-select:none}
+th:hover{background:#e9ecef}
+tr:hover{background-color:#f5f5f5}
+
+.alacak{color:#28a745;font-weight:bold}
+.borc{color:#dc3545;font-weight:bold}
+
+.ozet{
+  margin-top:30px;padding:20px;border:2px solid #000;border-radius:8px;
+  display:grid;grid-template-columns:repeat(3,1fr);gap:15px;font-weight:bold;
+  background:#f8f9fa
+}
+
+.odeme-box{text-align:left;background:#fafafa;border-radius:4px}
+.odeme-box ul{margin:4px 0;padding-left:18px}
+.odeme-box li{cursor:pointer;padding:3px 0;border-bottom:1px dashed #ddd}
+.odeme-box li:last-child{border-bottom:none}
+.odeme-box li:hover{background:#e9ecef}
+
+.login{
+  max-width:400px;margin:120px auto;background:#fff;
+  padding:30px;border-radius:10px;border:2px solid #000;
+  box-shadow:0 4px 20px rgba(0,0,0,0.1)
+}
+
+.modal{
+  display:none;position:fixed;z-index:1000;left:0;top:0;width:100%;height:100%;
+  background-color:rgba(0,0,0,0.5)
+}
+.modal-content{
+  background-color:#fff;margin:10% auto;padding:20px;border-radius:8px;
+  width:90%;max-width:500px
+}
+
+.uyari{color:#dc3545;font-size:12px;margin-top:-5px}
+.baslik-alani{display:flex;justify-content:space-between;align-items:center;margin-bottom:20px}
+.islem-btn{display:flex;gap:5px;justify-content:center}
+.islem-btn button{padding:5px 10px;width:auto}
+
+.aciklama-sutun{max-width:200px;word-wrap:break-word}
+.form-alani{background:#f8f9fa;padding:15px;border-radius:8px;margin-bottom:20px}
+.form-baslik{margin-top:0;color:#333}
+
+/* Tablo başlık filtreleri */
+.header-filter{
+  display:block;width:100%;padding:4px;margin-top:5px;font-size:11px;
+  border:1px solid #ccc;border-radius:3px;background:#fff
+}
+.header-filter:focus{outline:none;border-color:#0d6efd}
+
+.th-content{display:flex;flex-direction:column;align-items:center}
+.th-main{font-weight:bold;margin-bottom:5px;display:flex;align-items:center;justify-content:center;gap:5px}
+
+/* Sıralama ikonları */
+.sort-icon{
+  font-size:12px;color:#666;transition:transform 0.2s
+}
+.sort-asc .sort-icon{color:#0d6efd}
+.sort-desc .sort-icon{color:#0d6efd;transform:rotate(180deg)}
+.sort-icon-default{opacity:0.5}
+.sort-icon-active{opacity:1;color:#0d6efd}
+
+/* Giriş sayfası stil */
+.giris-baslik{text-align:center;margin-bottom:30px}
+.giris-baslik h2{margin-bottom:10px}
+.giris-baslik p{color:#666;margin-bottom:5px}
+.sifre-input{position:relative}
+.sifre-toggle{position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:#666}
+.sifre-toggle:hover{color:#0d6efd}
+.giris-btn{margin-top:20px}
+
+@media (max-width:1200px){
+  table{font-size:13px}
+  th,td{padding:8px}
+  .header-filter{font-size:10px;padding:3px}
+}
+
+@media (max-width:992px){
+  .container{padding:15px}
+  .ozet{grid-template-columns:1fr;gap:10px}
+  table{display:block;overflow-x:auto}
+}
+
+@media (max-width:768px){
+  .baslik-alani{flex-direction:column;gap:10px}
+  .baslik-alani div{display:flex;flex-wrap:wrap;gap:5px}
+  button{padding:8px}
+  .th-content{min-width:80px}
+}
+
+@media print{
+  button,.islem,.baslik-alani,.form-alani,.header-filter,.sort-icon{display:none!important}
+  .container{padding:0;box-shadow:none}
+  .th-content{display:block}
+  th{cursor:default}
+}
+
+/* Sıra sütunu için özel stil */
+.sira-sutun{width:50px;font-weight:bold;background:#f8f9fa}
+</style>
+</head>
+
+<body>
+
+<!-- 🔐 GELİŞMİŞ GİRİŞ SİSTEMİ -->
+<div class="login" id="login">
+<div class="giris-baslik">
+<h2>🔐 Veresiye Takip Sistemine Hoş Geldiniz</h2>
+<p>Lütfen güvenli şifrenizi giriniz</p>
+<p style="font-size:12px;color:#888">Bu sistem yerel tarayıcı depolaması kullanır</p>
+</div>
+
+<div class="sifre-input">
+<input type="password" id="sifre" placeholder="Güvenli Şifreniz" autocomplete="current-password">
+<button type="button" class="sifre-toggle" onclick="sifreGoster()">👁️</button>
+</div>
+
+<div style="margin-top:15px;padding:10px;background:#f8f9fa;border-radius:5px;font-size:12px;">
+<strong>Güvenlik İpuçları:</strong>
+<ul style="margin:5px 0 0 15px;padding:0">
+<li>Şifrenizi kimseyle paylaşmayın</li>
+<li>Oturumunuzu kapatmayı unutmayın</li>
+<li>Verilerinizi düzenli yedekleyin</li>
+</ul>
+</div>
+
+<button class="giris-btn" onclick="giris()">🔓 Sisteme Giriş Yap</button>
+
+<div style="margin-top:20px;text-align:center;font-size:12px;color:#666">
+<p>© 2024 Veresiye Takip Sistemi v2.0</p>
+</div>
+
+<div class="uyari" id="hataMesaji"></div>
+</div>
+
+<!-- 📒 ANA UYGULAMA -->
+<div class="container" id="app" style="display:none">
+
+<div class="baslik-alani">
+<h1>📒 Veresiye Takip Defteri</h1>
+<div>
+<button onclick="window.print()">🖨️ Yazdır</button>
+<button class="alt" onclick="exceleAktar()">📊 Excel'e Aktar</button>
+<button class="sil" onclick="cikisYap()">🚪 Çıkış</button>
+</div>
+</div>
+
+<!-- 📝 KAYIT FORMU -->
+<div class="form-alani">
+<h3 class="form-baslik" id="formBaslik">➕ Yeni Kayıt Ekle</h3>
+<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:10px">
+  <select id="tur">
+    <option>Alacak</option>
+    <option>Borç</option>
+  </select>
+  <input id="kisi" placeholder="Kişi / Firma *" required>
+  <input id="tarih" type="date">
+  <input id="toplam" type="number" placeholder="Toplam Tutar *" required min="0" step="0.01">
+</div>
+<textarea id="aciklama" placeholder="Açıklama (opsiyonel)" rows="2"></textarea>
+<div style="display:flex;gap:10px;margin-top:10px">
+  <button id="kaydetBtn" onclick="kayitKaydet()">➕ Kaydet</button>
+  <button id="iptalBtn" class="sil" onclick="formuTemizle()" style="display:none">❌ İptal</button>
+</div>
+<div class="uyari" id="kayitUyari"></div>
+</div>
+
+<!-- 📋 KAYIT LİSTESİ -->
+<h3>📋 Kayıt Listesi</h3>
+<table>
+<thead>
+<tr>
+<th class="sira-sutun">
+  <div class="th-content">
+    <div class="th-main">
+      Sıra
+    </div>
+  </div>
+</th>
+<th onclick="sirala('tur')" title="Türe göre sırala">
+  <div class="th-content">
+    <div class="th-main">
+      Tür
+      <span class="sort-icon" id="sortTur">↓↑</span>
+    </div>
+    <select class="header-filter" id="hfTur" onchange="tabloFiltrele()">
+      <option value="">Tümü</option>
+      <option>Alacak</option>
+      <option>Borç</option>
+    </select>
+  </div>
+</th>
+<th onclick="sirala('kisi')" title="Kişiye göre sırala">
+  <div class="th-content">
+    <div class="th-main">
+      Kişi/Firma
+      <span class="sort-icon" id="sortKisi">↓↑</span>
+    </div>
+    <input type="text" class="header-filter" id="hfKisi" placeholder="Ara..." onkeyup="tabloFiltrele()">
+  </div>
+</th>
+<th onclick="sirala('tarih')" title="Tarihe göre sırala">
+  <div class="th-content">
+    <div class="th-main">
+      Tarih
+      <span class="sort-icon" id="sortTarih">↓↑</span>
+    </div>
+    <input type="date" class="header-filter" id="hfTarih" onchange="tabloFiltrele()">
+  </div>
+</th>
+<th onclick="sirala('toplam')" title="Toplam tutara göre sırala">
+  <div class="th-content">
+    <div class="th-main">
+      Toplam
+      <span class="sort-icon" id="sortToplam">↓↑</span>
+    </div>
+    <div style="display:flex;gap:2px">
+      <input type="number" class="header-filter" id="hfToplamMin" placeholder="Min" style="width:48%" onchange="tabloFiltrele()">
+      <input type="number" class="header-filter" id="hfToplamMax" placeholder="Max" style="width:48%" onchange="tabloFiltrele()">
+    </div>
+  </div>
+</th>
+<th onclick="sirala('odenen')" title="Ödenen tutara göre sırala">
+  <div class="th-content">
+    <div class="th-main">
+      Ödenen
+      <span class="sort-icon" id="sortOdenen">↓↑</span>
+    </div>
+  </div>
+</th>
+<th onclick="sirala('kalan')" title="Kalan tutara göre sırala">
+  <div class="th-content">
+    <div class="th-main">
+      Kalan
+      <span class="sort-icon" id="sortKalan">↓↑</span>
+    </div>
+  </div>
+</th>
+<th onclick="sirala('aciklama')" title="Açıklamaya göre sırala">
+  <div class="th-content">
+    <div class="th-main">
+      Açıklama
+      <span class="sort-icon" id="sortAciklama">↓↑</span>
+    </div>
+    <input type="text" class="header-filter" id="hfAciklama" placeholder="Ara..." onkeyup="tabloFiltrele()">
+  </div>
+</th>
+<th>
+  <div class="th-content">
+    <div class="th-main">Taksitler</div>
+  </div>
+</th>
+<th class="islem">
+  <div class="th-content">
+    <div class="th-main">İşlem</div>
+  </div>
+</th>
+</tr>
+</thead>
+<tbody id="liste"></tbody>
+</table>
+
+<!-- 📊 ÖZET -->
+<div class="ozet">
+<div>💼 Toplam Alacak: <span id="ozetAlacak">0</span> ₺</div>
+<div>📉 Toplam Borç: <span id="ozetBorc">0</span> ₺</div>
+<div>⚖️ Net Bakiye: <span id="ozetNet">0</span> ₺</div>
+</div>
+
+<!-- 🛠️ YÖNETİM PANELİ -->
+<div style="margin-top:30px;padding:15px;background:#f8f9fa;border-radius:8px;border:1px solid #ddd">
+<h4 style="margin-top:0">🛠️ Sistem Yönetimi</h4>
+<div style="display:flex;gap:10px;flex-wrap:wrap">
+<button onclick="verileriYedekle()">💾 Yedek Al</button>
+<button onclick="verileriGeriYukle()">📂 Yedekten Geri Yükle</button>
+<button onclick="verileriTemizle()" class="sil">🗑️ Tüm Verileri Temizle</button>
+<button onclick="sifreDegistir()">🔐 Şifre Değiştir</button>
+</div>
+</div>
+</div>
+
+<!-- 💰 ÖDEME MODAL -->
+<div id="odemeModal" class="modal">
+<div class="modal-content">
+<h3>💳 Ödeme Ekle</h3>
+<input type="number" id="odemeTutar" placeholder="Tutar" min="0" step="0.01">
+<input type="date" id="odemeTarih">
+<button onclick="odemeKaydet()">💳 Ödeme Ekle</button>
+<button onclick="modalKapat('odemeModal')">İptal</button>
+</div>
+</div>
+
+<!-- 🔐 ŞİFRE DEĞİŞTİRME MODAL -->
+<div id="sifreModal" class="modal">
+<div class="modal-content">
+<h3>🔐 Şifre Değiştir</h3>
+<input type="password" id="eskiSifre" placeholder="Eski Şifre">
+<div class="sifre-input">
+<input type="password" id="yeniSifre" placeholder="Yeni Şifre (en az 6 karakter)">
+<button type="button" class="sifre-toggle" onclick="yeniSifreGoster()">👁️</button>
+</div>
+<div class="sifre-input">
+<input type="password" id="yeniSifreTekrar" placeholder="Yeni Şifre Tekrar">
+<button type="button" class="sifre-toggle" onclick="yeniSifreTekrarGoster()">👁️</button>
+</div>
+<button onclick="sifreDegistirKaydet()">💾 Şifreyi Değiştir</button>
+<button onclick="modalKapat('sifreModal')">İptal</button>
+<div class="uyari" id="sifreUyari"></div>
+</div>
+</div>
+
+<script>
+/* 🔐 GELİŞMİŞ GÜVENLİK SİSTEMİ */
+const GUVENLIK = {
+    // Varsayılan şifre (ilk kullanım için)
+    VARSAYILAN_SIFRE: "Takip123!",
+    
+    // SHA-256 hash fonksiyonu
+    async hashSifre(sifre) {
+        const encoder = new TextEncoder();
+        const data = encoder.encode(sifre);
+        const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+        const hashArray = Array.from(new Uint8Array(hashBuffer));
+        return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+    },
+    
+    // Şifre kontrolü
+    async sifreKontrol(girilenSifre) {
+        try {
+            const saklananHash = localStorage.getItem('sifre_hash');
+            const girilenHash = await this.hashSifre(girilenSifre);
+            
+            // Eğer hiç şifre yoksa, varsayılan şifreyi kontrol et
+            if (!saklananHash) {
+                const varsayilanHash = await this.hashSifre(this.VARSAYILAN_SIFRE);
+                return girilenHash === varsayilanHash;
+            }
+            
+            return girilenHash === saklananHash;
+        } catch (error) {
+            console.error("Şifre kontrol hatası:", error);
+            return false;
+        }
+    },
+    
+    // Yeni şifre kaydet
+    async yeniSifreKaydet(yeniSifre) {
+        try {
+            const hash = await this.hashSifre(yeniSifre);
+            localStorage.setItem('sifre_hash', hash);
+            return true;
+        } catch (error) {
+            console.error("Şifre kaydetme hatası:", error);
+            return false;
+        }
+    }
+};
+
+/* 📦 VERİ YÖNETİMİ */
+let veriler = JSON.parse(localStorage.getItem("veresiye")) || [];
+let aktifKayitIndex = null;
+let duzenlemeModu = false;
+let oturumTimeout;
+let siralama = {
+    alan: null,
+    yon: 'asc'
+};
+
+function kaydet() {
+    localStorage.setItem("veresiye", JSON.stringify(veriler));
+}
+
+function toplamOdenen(v) {
+    return v.odemeler.reduce((t, o) => t + o.tutar, 0);
+}
+
+/* 👁️ ŞİFRE GÖSTER/GİZLE */
+function sifreGoster() {
+    const sifreInput = document.getElementById('sifre');
+    const toggleBtn = sifreInput.nextElementSibling;
+    
+    if (sifreInput.type === 'password') {
+        sifreInput.type = 'text';
+        toggleBtn.textContent = '👁️‍🗨️';
+    } else {
+        sifreInput.type = 'password';
+        toggleBtn.textContent = '👁️';
+    }
+}
+
+function yeniSifreGoster() {
+    const input = document.getElementById('yeniSifre');
+    input.type = input.type === 'password' ? 'text' : 'password';
+}
+
+function yeniSifreTekrarGoster() {
+    const input = document.getElementById('yeniSifreTekrar');
+    input.type = input.type === 'password' ? 'text' : 'password';
+}
+
+/* 🔑 GİRİŞ/ÇIKIŞ İŞLEMLERİ */
+async function giris() {
+    const girilenSifre = document.getElementById('sifre').value;
+    const hataMesaji = document.getElementById('hataMesaji');
+    
+    hataMesaji.textContent = "";
+    
+    if (!girilenSifre) {
+        hataMesaji.textContent = "Lütfen şifrenizi giriniz!";
+        return;
+    }
+    
+    try {
+        const sifreDogru = await GUVENLIK.sifreKontrol(girilenSifre);
+        
+        if (sifreDogru) {
+            document.getElementById('login').style.display = "none";
+            document.getElementById('app').style.display = "block";
+            
+            // İlk girişte varsayılan şifre kullanıldıysa uyar
+            const saklananHash = localStorage.getItem('sifre_hash');
+            if (!saklananHash) {
+                alert("Güvenliğiniz için lütfen şifrenizi değiştirin!\nŞu anda varsayılan şifre kullanıyorsunuz.");
+                sifreDegistir();
+            }
+            
+            listele();
+            oturumBaslat();
+        } else {
+            hataMesaji.textContent = "Hatalı şifre! Lütfen tekrar deneyin.";
+            document.getElementById('sifre').value = "";
+            document.getElementById('sifre').focus();
+        }
+    } catch (error) {
+        hataMesaji.textContent = "Giriş işlemi sırasında bir hata oluştu.";
+    }
+}
+
+function oturumBaslat() {
+    if (oturumTimeout) clearTimeout(oturumTimeout);
+    oturumTimeout = setTimeout(() => {
+        alert("Güvenlik nedeniyle oturumunuz sonlandırıldı.");
+        cikisYap();
+    }, 30 * 60 * 1000); // 30 dakika
+}
+
+function cikisYap() {
+    if (confirm("Oturumu kapatmak istediğinize emin misiniz?")) {
+        document.getElementById('app').style.display = "none";
+        document.getElementById('login').style.display = "block";
+        document.getElementById('sifre').value = "";
+        if (oturumTimeout) clearTimeout(oturumTimeout);
+    }
+}
+
+/* 🔐 ŞİFRE DEĞİŞTİRME */
+function sifreDegistir() {
+    document.getElementById('sifreModal').style.display = 'block';
+    document.getElementById('eskiSifre').value = '';
+    document.getElementById('yeniSifre').value = '';
+    document.getElementById('yeniSifreTekrar').value = '';
+    document.getElementById('sifreUyari').textContent = '';
+}
+
+async function sifreDegistirKaydet() {
+    const eskiSifre = document.getElementById('eskiSifre').value;
+    const yeniSifre = document.getElementById('yeniSifre').value;
+    const yeniSifreTekrar = document.getElementById('yeniSifreTekrar').value;
+    const uyari = document.getElementById('sifreUyari');
+    
+    uyari.textContent = "";
+    
+    // Validasyon
+    if (!eskiSifre) {
+        uyari.textContent = "Eski şifrenizi giriniz!";
+        return;
+    }
+    
+    if (!yeniSifre || yeniSifre.length < 6) {
+        uyari.textContent = "Yeni şifre en az 6 karakter olmalıdır!";
+        return;
+    }
+    
+    if (yeniSifre !== yeniSifreTekrar) {
+        uyari.textContent = "Yeni şifreler eşleşmiyor!";
+        return;
+    }
+    
+    // Eski şifre kontrolü
+    const eskiSifreDogru = await GUVENLIK.sifreKontrol(eskiSifre);
+    if (!eskiSifreDogru) {
+        uyari.textContent = "Eski şifre hatalı!";
+        return;
+    }
+    
+    // Yeni şifreyi kaydet
+    const basarili = await GUVENLIK.yeniSifreKaydet(yeniSifre);
+    if (basarili) {
+        uyari.textContent = "Şifre başarıyla değiştirildi!";
+        uyari.style.color = "#28a745";
+        
+        setTimeout(() => {
+            modalKapat('sifreModal');
+            uyari.textContent = "";
+            alert("Şifreniz başarıyla değiştirildi. Lütfen yeni şifrenizle tekrar giriş yapın.");
+            cikisYap();
+        }, 2000);
+    } else {
+        uyari.textContent = "Şifre değiştirilirken bir hata oluştu!";
+    }
+}
+
+/* 📝 KAYIT İŞLEMLERİ */
+function kayitKaydet() {
+    const kisi = document.getElementById('kisi');
+    const toplam = document.getElementById('toplam');
+    const uyari = document.getElementById('kayitUyari');
+    
+    uyari.textContent = "";
+    
+    if (!kisi.value.trim()) {
+        uyari.textContent = "Kişi/Firma adı gereklidir!";
+        kisi.focus();
+        return;
+    }
+    
+    if (!toplam.value || toplam.value <= 0) {
+        uyari.textContent = "Geçerli bir tutar giriniz!";
+        toplam.focus();
+        return;
+    }
+    
+    if (duzenlemeModu && aktifKayitIndex !== null) {
+        // Düzenleme modunda
+        veriler[aktifKayitIndex] = {
+            tur: document.getElementById('tur').value,
+            kisi: kisi.value.trim(),
+            tarih: document.getElementById('tarih').value,
+            toplam: parseFloat(toplam.value),
+            aciklama: document.getElementById('aciklama').value.trim(),
+            odemeler: veriler[aktifKayitIndex].odemeler,
+            olusturma: veriler[aktifKayitIndex].olusturma,
+            guncelleme: new Date().toISOString()
+        };
+        
+        uyari.textContent = "Kayıt başarıyla güncellendi!";
+        uyari.style.color = "#28a745";
+    } else {
+        // Yeni kayıt modunda
+        veriler.push({
+            tur: document.getElementById('tur').value,
+            kisi: kisi.value.trim(),
+            tarih: document.getElementById('tarih').value || new Date().toISOString().slice(0,10),
+            toplam: parseFloat(toplam.value),
+            aciklama: document.getElementById('aciklama').value.trim(),
+            odemeler: [],
+            olusturma: new Date().toISOString()
+        });
+        
+        uyari.textContent = "Kayıt başarıyla eklendi!";
+        uyari.style.color = "#28a745";
+    }
+    
+    kaydet();
+    listele();
+    formuTemizle();
+    setTimeout(() => uyari.textContent = "", 3000);
+}
+
+function kayitDuzenle(i) {
+    const kayit = veriler[i];
+    
+    // Formu doldur
+    document.getElementById('tur').value = kayit.tur;
+    document.getElementById('kisi').value = kayit.kisi;
+    document.getElementById('tarih').value = kayit.tarih;
+    document.getElementById('toplam').value = kayit.toplam;
+    document.getElementById('aciklama').value = kayit.aciklama || '';
+    
+    // Formu düzenleme moduna geçir
+    duzenlemeModu = true;
+    aktifKayitIndex = i;
+    
+    document.getElementById('formBaslik').textContent = "✏️ Kayıt Düzenle";
+    document.getElementById('kaydetBtn').textContent = "💾 Güncelle";
+    document.getElementById('iptalBtn').style.display = 'block';
+    document.getElementById('kayitUyari').textContent = "Kaydı düzenliyorsunuz...";
+    document.getElementById('kayitUyari').style.color = "#ffc107";
+    
+    document.getElementById('kisi').focus();
+}
+
+function formuTemizle() {
+    document.getElementById('tur').value = "Alacak";
+    document.getElementById('kisi').value = "";
+    document.getElementById('tarih').value = new Date().toISOString().slice(0,10);
+    document.getElementById('toplam').value = "";
+    document.getElementById('aciklama').value = "";
+    
+    duzenlemeModu = false;
+    aktifKayitIndex = null;
+    
+    document.getElementById('formBaslik').textContent = "➕ Yeni Kayıt Ekle";
+    document.getElementById('kaydetBtn').textContent = "➕ Kaydet";
+    document.getElementById('iptalBtn').style.display = 'none';
+    document.getElementById('kayitUyari').textContent = "";
+}
+
+/* 💰 ÖDEME İŞLEMLERİ */
+function odemeEkle(i) {
+    aktifKayitIndex = i;
+    document.getElementById('odemeModal').style.display = 'block';
+    document.getElementById('odemeTarih').value = new Date().toISOString().slice(0,10);
+    document.getElementById('odemeTutar').focus();
+}
+
+function odemeKaydet() {
+    const tutar = document.getElementById('odemeTutar');
+    const tarih = document.getElementById('odemeTarih');
+    
+    if (!tutar.value || tutar.value <= 0) {
+        alert("Geçerli bir tutar giriniz!");
+        return;
+    }
+    
+    veriler[aktifKayitIndex].odemeler.push({
+        tutar: parseFloat(tutar.value),
+        tarih: tarih.value || new Date().toISOString().slice(0,10)
+    });
+    
+    tutar.value = "";
+    modalKapat('odemeModal');
+    kaydet();
+    listele();
+}
+
+function odemeDuzenle(i, j) {
+    const o = veriler[i].odemeler[j];
+    const yeniTutar = prompt("Yeni tutar:", o.tutar);
+    if (!yeniTutar || isNaN(yeniTutar) || yeniTutar <= 0) return;
+    
+    o.tutar = parseFloat(yeniTutar);
+    kaydet();
+    listele();
+}
+
+function odemeSil(i, j) {
+    if (confirm("Bu ödemeyi silmek istediğinize emin misiniz?")) {
+        veriler[i].odemeler.splice(j, 1);
+        kaydet();
+        listele();
+    }
+}
+
+/* 📊 LİSTELEME VE SIRALAMA - SIRA NUMARASI EKLENDİ */
+function listele(filtrelenmisVeri = veriler) {
+    let liste = document.getElementById('liste');
+    let a = 0, b = 0;
+    
+    liste.innerHTML = "";
+    
+    filtrelenmisVeri.forEach((v, index) => {
+        let o = toplamOdenen(v);
+        let k = v.toplam - o;
+        
+        v.tur === "Alacak" ? a += k : b += k;
+        
+        // Sıra numarası (1'den başlayarak)
+        const siraNo = index + 1;
+        
+        // Orjinal dizideki indeksi bul
+        let orjinalIndex = -1;
+        for (let i = 0; i < veriler.length; i++) {
+            if (veriler[i] === v) {
+                orjinalIndex = i;
+                break;
+            }
+        }
+        
+        // Eğer bulunamazsa, verileri karşılaştırarak bul
+        if (orjinalIndex === -1) {
+            orjinalIndex = veriler.findIndex(item => 
+                item.kisi === v.kisi && 
+                item.tarih === v.tarih && 
+                item.toplam === v.toplam &&
+                item.tur === v.tur &&
+                item.aciklama === v.aciklama
+            );
+        }
+        
+        liste.innerHTML += `
+<tr>
+<td class="sira-sutun"><strong>${siraNo}</strong></td>
+<td class="${v.tur === "Alacak" ? "alacak" : "borc"}">${v.tur}</td>
+<td><strong>${v.kisi}</strong></td>
+<td>${v.tarih}</td>
+<td>${v.toplam.toFixed(2)} ₺</td>
+<td>${o.toFixed(2)} ₺</td>
+<td><strong>${k.toFixed(2)} ₺</strong></td>
+<td class="aciklama-sutun">${v.aciklama || '-'}</td>
+<td class="odeme-box">
+${v.odemeler.length > 0 ? 
+    `<ul>${v.odemeler.map((x, j) => 
+        `<li onclick="odemeDuzenle(${orjinalIndex},${j})">
+            ${x.tarih} – ${x.tutar.toFixed(2)} ₺
+            <button class="sil" onclick="event.stopPropagation();odemeSil(${orjinalIndex},${j})">×</button>
+        </li>`
+    ).join("")}</ul>` : 
+    '<small>Ödeme yok</small>'}
+</td>
+<td class="islem">
+    <div class="islem-btn">
+        <button onclick="odemeEkle(${orjinalIndex})">💳</button>
+        <button class="duzenle" onclick="kayitDuzenle(${orjinalIndex})">✏️</button>
+        <button class="sil" onclick="kayitSil(${orjinalIndex})">🗑️</button>
+    </div>
+</td>
+</tr>`;
+    });
+    
+    document.getElementById('ozetAlacak').textContent = a.toFixed(2);
+    document.getElementById('ozetBorc').textContent = b.toFixed(2);
+    document.getElementById('ozetNet').textContent = (a - b).toFixed(2);
+    document.getElementById('ozetNet').style.color = (a - b) >= 0 ? "#28a745" : "#dc3545";
+}
+
+function sirala(alan) {
+    if (siralama.alan === alan) {
+        siralama.yon = siralama.yon === 'asc' ? 'desc' : 'asc';
+    } else {
+        siralama.alan = alan;
+        siralama.yon = 'asc';
+    }
+    
+    document.querySelectorAll('.sort-icon').forEach(icon => {
+        icon.textContent = '↓↑';
+        icon.classList.remove('sort-icon-active');
+    });
+    
+    const aktifIcon = document.getElementById(`sort${alan.charAt(0).toUpperCase() + alan.slice(1)}`);
+    if (aktifIcon) {
+        aktifIcon.textContent = siralama.yon === 'asc' ? '↑' : '↓';
+        aktifIcon.classList.add('sort-icon-active');
+    }
+    
+    tabloFiltrele();
+}
+
+function tabloFiltrele() {
+    let filtrelenmis = veriler.filter(v => {
+        let hfTur = document.getElementById('hfTur').value;
+        let hfKisi = document.getElementById('hfKisi').value.toLowerCase();
+        let hfTarih = document.getElementById('hfTarih').value;
+        let hfToplamMin = document.getElementById('hfToplamMin').value;
+        let hfToplamMax = document.getElementById('hfToplamMax').value;
+        let hfAciklama = document.getElementById('hfAciklama').value.toLowerCase();
+        
+        let o = toplamOdenen(v);
+        let k = v.toplam - o;
+        
+        if (hfTur && v.tur !== hfTur) return false;
+        if (hfKisi && !v.kisi.toLowerCase().includes(hfKisi)) return false;
+        if (hfTarih && v.tarih !== hfTarih) return false;
+        if (hfToplamMin && v.toplam < parseFloat(hfToplamMin)) return false;
+        if (hfToplamMax && v.toplam > parseFloat(hfToplamMax)) return false;
+        if (hfAciklama && (!v.aciklama || !v.aciklama.toLowerCase().includes(hfAciklama))) return false;
+        
+        return true;
+    });
+    
+    if (siralama.alan) {
+        filtrelenmis.sort((a, b) => {
+            let degerA, degerB;
+            
+            switch(siralama.alan) {
+                case 'tur':
+                    degerA = a.tur;
+                    degerB = b.tur;
+                    break;
+                case 'kisi':
+                    degerA = a.kisi.toLowerCase();
+                    degerB = b.kisi.toLowerCase();
+                    degerA = degerA.replace(/ç/g, 'c').replace(/ğ/g, 'g').replace(/ı/g, 'i')
+                                .replace(/ö/g, 'o').replace(/ş/g, 's').replace(/ü/g, 'u');
+                    degerB = degerB.replace(/ç/g, 'c').replace(/ğ/g, 'g').replace(/ı/g, 'i')
+                                .replace(/ö/g, 'o').replace(/ş/g, 's').replace(/ü/g, 'u');
+                    break;
+                case 'tarih':
+                    degerA = new Date(a.tarih);
+                    degerB = new Date(b.tarih);
+                    break;
+                case 'toplam':
+                    degerA = a.toplam;
+                    degerB = b.toplam;
+                    break;
+                case 'odenen':
+                    degerA = toplamOdenen(a);
+                    degerB = toplamOdenen(b);
+                    break;
+                case 'kalan':
+                    degerA = a.toplam - toplamOdenen(a);
+                    degerB = b.toplam - toplamOdenen(b);
+                    break;
+                case 'aciklama':
+                    degerA = a.aciklama || '';
+                    degerB = b.aciklama || '';
+                    degerA = degerA.toLowerCase().replace(/ç/g, 'c').replace(/ğ/g, 'g').replace(/ı/g, 'i')
+                                .replace(/ö/g, 'o').replace(/ş/g, 's').replace(/ü/g, 'u');
+                    degerB = degerB.toLowerCase().replace(/ç/g, 'c').replace(/ğ/g, 'g').replace(/ı/g, 'i')
+                                .replace(/ö/g, 'o').replace(/ş/g, 's').replace(/ü/g, 'u');
+                    break;
+                default:
+                    return 0;
+            }
+            
+            if (degerA < degerB) return siralama.yon === 'asc' ? -1 : 1;
+            if (degerA > degerB) return siralama.yon === 'asc' ? 1 : -1;
+            return 0;
+        });
+    }
+    
+    listele(filtrelenmis);
+}
+
+/* 💾 YEDEKLEME İŞLEMLERİ */
+function verileriYedekle() {
+    const veri = {
+        veriler: veriler,
+        tarih: new Date().toISOString(),
+        versiyon: '2.0'
+    };
+    
+    const veriStr = JSON.stringify(veri, null, 2);
+    const blob = new Blob([veriStr], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `veresiye_yedek_${new Date().toISOString().slice(0,10)}.json`;
+    a.click();
+    
+    alert('Yedekleme başarılı! Dosya indiriliyor...');
+}
+
+function verileriGeriYukle() {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = '.json';
+    
+    input.onchange = function(e) {
+        const file = e.target.files[0];
+        const reader = new FileReader();
+        
+        reader.onload = function(event) {
+            try {
+                const yedek = JSON.parse(event.target.result);
+                
+                if (yedek.veriler && Array.isArray(yedek.veriler)) {
+                    if (confirm(`${yedek.veriler.length} kayıt bulundu. Geri yüklemek istiyor musunuz?`)) {
+                        veriler = yedek.veriler;
+                        kaydet();
+                        listele();
+                        alert('Yedek başarıyla geri yüklendi!');
+                    }
+                } else {
+                    alert('Geçersiz yedek dosyası!');
+                }
+            } catch (error) {
+                alert('Yedek dosyası okunamadı!');
+            }
+        };
+        
+        reader.readAsText(file);
+    };
+    
+    input.click();
+}
+
+/* 🗑️ SİLME İŞLEMLERİ */
+function kayitSil(i) {
+    if (confirm("Bu kaydı ve tüm ödemelerini silmek istediğinize emin misiniz?")) {
+        veriler.splice(i, 1);
+        kaydet();
+        listele();
+        
+        if (duzenlemeModu && aktifKayitIndex === i) {
+            formuTemizle();
+        }
+    }
+}
+
+function verileriTemizle() {
+    if (confirm("TÜM verileri silmek istediğinize emin misiniz?\n\n⚠️ BU İŞLEM GERİ ALINAMAZ!")) {
+        veriler = [];
+        kaydet();
+        listele();
+        formuTemizle();
+        alert('Tüm veriler temizlendi!');
+    }
+}
+
+/* 📊 EXCEL AKTARMA */
+function exceleAktar() {
+    let html = "<table border='1'><tr><th>Sıra</th><th>Kişi</th><th>Tür</th><th>Tarih</th><th>Açıklama</th><th>Toplam</th><th>Ödenen</th><th>Kalan</th><th>Ödeme Tarihleri</th></tr>";
+    
+    veriler.forEach((v, index) => {
+        let o = toplamOdenen(v);
+        let odemeTarihleri = v.odemeler.map(x => `${x.tarih}: ${x.tutar.toFixed(2)} ₺`).join(', ');
+        
+        html += `<tr>
+            <td>${index + 1}</td>
+            <td>${v.kisi}</td>
+            <td>${v.tur}</td>
+            <td>${v.tarih}</td>
+            <td>${v.aciklama || ''}</td>
+            <td>${v.toplam.toFixed(2)}</td>
+            <td>${o.toFixed(2)}</td>
+            <td>${(v.toplam - o).toFixed(2)}</td>
+            <td>${odemeTarihleri || '-'}</td>
+        </tr>`;
+    });
+    
+    let a = document.createElement("a");
+    a.href = URL.createObjectURL(new Blob([html], {type: "application/vnd.ms-excel"}));
+    a.download = `veresiye_${new Date().toISOString().slice(0,10)}.xls`;
+    a.click();
+}
+
+/* 🪟 MODAL İŞLEMLERİ */
+function modalKapat(modalId) {
+    document.getElementById(modalId).style.display = 'none';
+    if (modalId === 'odemeModal') {
+        aktifKayitIndex = null;
+    }
+}
+
+// Sayfa yüklendiğinde
+window.onload = function() {
+    document.getElementById('tarih').value = new Date().toISOString().slice(0,10);
+    
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') {
+            modalKapat('odemeModal');
+            modalKapat('sifreModal');
+        }
+    });
+    
+    window.onclick = function(event) {
+        if (event.target.classList.contains('modal')) {
+            event.target.style.display = 'none';
+        }
+    }
+};
+</script>
+</body>
+</html>
